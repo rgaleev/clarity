@@ -132,7 +132,11 @@ function updateVersionInJson(fileContent: string, newVersion: string): string {
         }
     }
 
-    return JSON.stringify(json, null, 2).replace(/\n/g, '\r\n');
+    return JSON
+        // format json with 2 spaces indentation
+        .stringify(json, null, 2)
+        // replace LF with CRLF to maintain the current line endings
+        .replace(/\n/g, '\r\n');
 }
 
 const addVersionFilesToGit = async (versionSourceFile: string, jsonFilesToUpdate: string[]): Promise<void> => {
