@@ -1,12 +1,16 @@
-﻿const { argv } = require('node:process');
-const fs = require('fs').promises;
-const path = require('path');
-const { exec } = require('child_process');
+﻿import {argv} from 'node:process';
+import {promises as fs} from 'fs';
+import * as path from 'path';
+import {exec} from 'child_process';
 
-const bumpVersion = async () => {
+type VersionPart = 'major' | 'minor' | 'patch';
+
+const SourceVersionRegExp = /(?<=version = ")[^"]+/;
+
+const bumpVersion = async (): Promise<void> => {
     console.log('Bumping version...');
 
-    const versionPartToBump = getVersionPartToBumpFromCommandLine();
+    const versionPartToBump = getVersionPartToBumpFromCommandLine(argv);
     console.log(`Version part to bump: ${versionPartToBump}`);
 
     const versionSourceFile = 'packages/clarity-js/src/core/version.ts';
@@ -33,37 +37,27 @@ const bumpVersion = async () => {
 
         console.log('Version bump complete.');
     } catch (error) {
-        console.error(`Error bumping version: ${error.message}`);
+        console.error(`Error bumping version: ${(error as Error).message}`);
     }
 };
 
-const getVersionPartToBumpFromCommandLine = () => {
-    let versionPartToBump = 'patch';
+const getVersionPartToBumpFromCommandLine = (argv: string[]): VersionPart => {
+    let versionPartToBump: VersionPart = 'patch';
 
     if (argv.length > 2) {
         const versionPartParameter = argv[2];
-        const versionPartToBumpParsed = versionPartParameter.split('=')[1];
+        const versionPartToBumpParsed = versionPartParameter.split('=')[1] as VersionPart;
 
-        switch (versionPartToBumpParsed) {
-            case 'major':
-                versionPartToBump = 'major';
-                break;
-            case 'minor':
-                versionPartToBump = 'minor';
-                break;
-            case 'patch':
-                versionPartToBump = 'patch';
-                break;
-            default:
-                versionPartToBump = 'patch';
+        if (['major', 'minor', 'patch'].includes(versionPartToBumpParsed)) {
+            versionPartToBump = versionPartToBumpParsed;
         }
     }
     return versionPartToBump;
 };
 
-const getCurrentVersion = async (versionSourceFile) => {
+const getCurrentVersion = async (versionSourceFile: string): Promise<string> => {
     const versionFileContent = await fs.readFile(getFullFilePath(versionSourceFile), 'utf-8');
-    const versionMatch = versionFileContent.match(/(?<=version = ")[^"]+/);
+    const versionMatch = versionFileContent.match(SourceVersionRegExp);
 
     if (!versionMatch) {
         throw new Error('Version format is invalid');
@@ -72,7 +66,7 @@ const getCurrentVersion = async (versionSourceFile) => {
     return versionMatch[0];
 };
 
-const generateNewVersion = (version, versionPartToBump) => {
+const generateNewVersion = (version: string, versionPartToBump: VersionPart): string => {
     const versionParts = version.split('.');
 
     if (versionParts.length !== 3) {
@@ -96,23 +90,52 @@ const generateNewVersion = (version, versionPartToBump) => {
     return versionParts.join('.');
 };
 
-const updateSourceVersionFile = async (versionSourceFile, newVersion) => {
+const updateSourceVersionFile = async (versionSourceFile: string, newVersion: string): Promise<void> => {
     console.log(`Updating ${versionSourceFile}...`);
     const versionFileContent = await fs.readFile(getFullFilePath(versionSourceFile), 'utf-8');
-    const newVersionFileContent = versionFileContent.replace(/(?<=version = ")[^"]+/, newVersion);
+    const newVersionFileContent = versionFileContent.replace(SourceVersionRegExp, newVersion);
     await fs.writeFile(getFullFilePath(versionSourceFile), newVersionFileContent, 'utf-8');
 };
 
-const updateJsonVersionFiles = async (filesToUpdate, newVersion) => {
+const updateJsonVersionFiles = async (filesToUpdate: string[], newVersion: string): Promise<void> => {
     for (const filePath of filesToUpdate) {
         console.log(`Updating ${filePath}...`);
         const fileContent = await fs.readFile(getFullFilePath(filePath), 'utf-8');
-        const newFileContent = fileContent.replace(/(?<="version": ")[^"]+/, newVersion);
+        const newFileContent = updateVersionInJson(fileContent, newVersion);
         await fs.writeFile(getFullFilePath(filePath), newFileContent, 'utf-8');
     }
 };
 
-const addVersionFilesToGit = async (versionSourceFile, jsonFilesToUpdate) => {
+function updateVersionInJson(fileContent: string, newVersion: string): string {
+    const versionFieldNames = [
+        "version",
+        "version_name"
+    ];
+    const dependencyNames = [
+        "clarity-js",
+        "clarity-decode",
+        "clarity-devtools",
+        "clarity-visualize"
+    ];
+
+    const json = JSON.parse(fileContent);
+
+    for (const fieldName of versionFieldNames) {
+        if (json[fieldName]) {
+            json[fieldName] = newVersion;
+        }
+    }
+
+    for (const dependencyName of dependencyNames) {
+        if (json.dependencies && json.dependencies[dependencyName]) {
+            json.dependencies[dependencyName] = "^" + newVersion;
+        }
+    }
+
+    return JSON.stringify(json, null, 2).replace(/\n/g, '\r\n');
+}
+
+const addVersionFilesToGit = async (versionSourceFile: string, jsonFilesToUpdate: string[]): Promise<void> => {
     const filesToGitAdd = [versionSourceFile, ...jsonFilesToUpdate];
     const filesToGitAddStr = filesToGitAdd.map(file => `"${getFullFilePath(file)}"`).join(' ');
 
@@ -130,8 +153,8 @@ const addVersionFilesToGit = async (versionSourceFile, jsonFilesToUpdate) => {
     });
 };
 
-const getFullFilePath = (filePath) => {
+const getFullFilePath = (filePath: string): string => {
     return path.resolve(__dirname, '../', filePath);
 };
 
-bumpVersion();
+bumpVersion()
