@@ -21,7 +21,8 @@ const bumpVersion = async (): Promise<void> => {
         'packages/clarity-devtools/package.json',
         'packages/clarity-devtools/static/manifest.json',
         'packages/clarity-js/package.json',
-        'packages/clarity-visualize/package.json'
+        'packages/clarity-visualize/package.json',
+        'packages/rgaleev-local-package/package.json'
     ];
 
     try {
