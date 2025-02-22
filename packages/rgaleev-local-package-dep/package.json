@@ -1,0 +1,21 @@
+{
+  "name": "rgaleev-local-package-dep",
+  "version": "0.0.3",
+  "author": "Roman Galeev",
+  "dependencies": {
+    "clarity-js": "^0.0.3"
+  },
+  "scripts": {
+    "build": "ts-node index.ts"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.ts": [
+      "tslint --format codeFrame"
+    ]
+  }
+}
