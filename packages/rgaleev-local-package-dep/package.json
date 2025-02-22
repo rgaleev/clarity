@@ -1,9 +1,9 @@
 {
   "name": "rgaleev-local-package-dep",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "Roman Galeev",
   "dependencies": {
-    "clarity-js": "^0.0.2"
+    "clarity-js": "^0.0.3"
   },
   "scripts": {
     "build": "ts-node index.ts"
