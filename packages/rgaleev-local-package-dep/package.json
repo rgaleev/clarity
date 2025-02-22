@@ -1,5 +1,5 @@
 {
-  "name": "rgaleev-local-package",
+  "name": "rgaleev-local-package-dep",
   "version": "0.0.2",
   "author": "Roman Galeev",
   "dependencies": {
