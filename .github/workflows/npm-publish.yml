@@ -17,6 +17,19 @@ jobs:
           node-version: 20
       - run: yarn install
       - run: yarn build
+      - run: yarn test
+      - run: |
+          # Make size check script executable
+          chmod +x ../../scripts/check-file-size.sh
+      - run: |
+          # Run the size check script for clarity-js
+          ../../scripts/check-file-size.sh clarity-js 0.8.0 "build/clarity.min.js" 5
+      - run: |
+          # Run the size check script for clarity-decode
+          ../../scripts/check-file-size.sh clarity-decode 0.8.0 "build/clarity.decode.js" 5
+      - run: |
+          # Run the size check script for clarity-visualize
+          ../../scripts/check-file-size.sh clarity-visualize 0.8.0 "build/clarity.visualize.js" 5
 
   publish-npm:
     needs: build
@@ -27,6 +40,8 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
+      - run: yarn install
+      - run: yarn build
       - run: npm publish
         working-directory: ./packages/rgaleev-local-package
         env:
